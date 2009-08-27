@@ -96,7 +96,7 @@ class ActiveRecord::Base
     # Ask the database to perform the buffered restult set stream. Pass the cursor name 
     # for the query and the parameters for the #find method. The SQL is built and run.
     def open_cursor(name, *args)
-      options = extract_options_from_args!(args)
+      options = args.last.is_a?(Hash) ? args.pop : {}
       validate_find_options(options)
       set_readonly_option!(options)
       sql = construct_finder_sql(options)
@@ -123,13 +123,13 @@ class ActiveRecord::Base
     # row is yeilded to the block as a hash[:colname] 
     def find_cursor(name, transaction, *findargs)
       connection.begin_db_transaction if transaction
-      ActiveRecord::Base.open_cursor(name, *findargs)
+      open_cursor(name, *findargs)
       count = 0
       while (row = ActiveRecord::Base.fetch_cursor(name)) do
         count+= 1
         yield row
       end
-      ActiveRecord::Base.close_cursor(name)
+      close_cursor(name)
       connection.commit_db_transaction if transaction
       count
     end
